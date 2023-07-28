@@ -4,6 +4,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"time"
 
 	db "github.com/EvFrontis/LibAccountingRecords-TgBot/database"
 
@@ -117,7 +118,7 @@ func TelegramBot() {
 					bot.Send(msg)
 
 				case age:
-					person.Age, err = strconv.Atoi(update.Message.Text)
+					person.Birthdate, err = time.Parse("2006-01-02", update.Message.Text)
 					if err != nil {
 						addStatus = age
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, "It's not a number. Enter a number.")
@@ -136,7 +137,7 @@ func TelegramBot() {
 						bot.Send(msg)
 					} else {
 						//Putting name, age, number to database
-						if err := db.AddPerson(update.Message.Chat.UserName, person.Name, person.Age, person.Num); err != nil {
+						if err := db.AddPerson(update.Message.Chat.UserName, person.Name, person.Birthdate, person.Num); err != nil {
 							//Send message
 							msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Database error, but bot still working. Error: "+err.Error())
 							bot.Send(msg)

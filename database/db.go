@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -57,6 +58,7 @@ func CreateUserTable(username string) error {
 	}
 	defer db.Close()
 
+	//TODO: change the data type (AGE to BIRTHDATE)
 	if _, err := db.Exec(fmt.Sprintf("CREATE TABLE IF NOT EXISTS u_%s (NAME TEXT, AGE INT, NUM INT)", username)); err != nil {
 		return err
 	}
@@ -65,7 +67,7 @@ func CreateUserTable(username string) error {
 }
 
 // Adding information about a person to the table
-func AddPerson(username string, name string, age, num int) error {
+func AddPerson(username string, name string, birthdate time.Time, num int) error {
 
 	//Connecting to database
 	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
@@ -78,7 +80,7 @@ func AddPerson(username string, name string, age, num int) error {
 	data := fmt.Sprintf("INSERT INTO u_%s (name, age, num) VALUES($1, $2, $3)", username)
 
 	//Execute SQL command in database
-	if _, err := db.Exec(data, name, age, num); err != nil {
+	if _, err := db.Exec(data, name, birthdate, num); err != nil {
 		return err
 	}
 
@@ -108,7 +110,7 @@ func GetPeople(username, name string) ([]Person, error) {
 	// Loop through rows, using Scan to assign column data to struct fields.
 	for rows.Next() {
 		var person Person
-		if err := rows.Scan(&person.Name, &person.Age, &person.Num); err != nil {
+		if err := rows.Scan(&person.Name, &person.Birthdate, &person.Num); err != nil {
 			return people, err
 		}
 		people = append(people, person)

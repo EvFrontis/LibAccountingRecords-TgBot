@@ -1,13 +1,20 @@
 package db
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type Person struct {
-	Name string
-	Age  int
-	Num  int
+	//Age         int
+	Name        string
+	Num         int
+	PhoneNumber string
+	Birthdate   time.Time
+	Address     string
+	Profession  string
 }
 
 func (p Person) String() string {
-	return fmt.Sprintf("%s %d %d", p.Name, p.Age, p.Num)
+	return fmt.Sprintf("Name: %s  Age: %d Num: %d", p.Name, time.Now().Year()-p.Birthdate.Year(), p.Num)
 }
