@@ -6,15 +6,14 @@ import (
 )
 
 type Person struct {
-	//Age         int
 	Name        string
+	DoB         time.Time
 	Num         int
 	PhoneNumber string
-	Birthdate   time.Time
 	Address     string
 	Profession  string
 }
 
 func (p Person) String() string {
-	return fmt.Sprintf("Name: %s  Age: %d Num: %d", p.Name, time.Now().Year()-p.Birthdate.Year(), p.Num)
+	return fmt.Sprintf("%s Age: %d Number: %d", p.Name, time.Now().Year()-p.DoB.Year(), p.Num)
 }
