@@ -24,9 +24,75 @@ type Add int
 
 const (
 	name Add = iota
-	age
-	number
+	doB
+	num
+	phoneNumber
+	address
+	profession
 )
+
+func AddSwitch(addStatus Add, person *db.Person, update tgbotapi.Update, bot *tgbotapi.BotAPI) (Add, bool) {
+	var err error
+
+	switch addStatus {
+	case name:
+		person.Name = update.Message.Text
+		addStatus = doB // switching to entering an age
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Enter the person's date of birth in the format 2/1/2006.")
+		bot.Send(msg)
+
+	case doB:
+		person.DoB, err = time.Parse("2/1/2006", update.Message.Text)
+		if err != nil {
+			addStatus = doB
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "It's not a date. Enter a date.")
+			bot.Send(msg)
+		} else {
+			addStatus = num // switching to entering a number
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Enter the person's number.")
+			bot.Send(msg)
+		}
+
+	case num:
+		person.Num, err = strconv.Atoi(update.Message.Text)
+		if err != nil {
+			addStatus = num
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "It's not a number. Enter a number.")
+			bot.Send(msg)
+		} else {
+			addStatus = phoneNumber
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Enter the person's phone number.")
+			bot.Send(msg)
+		}
+
+	case phoneNumber:
+		person.PhoneNumber = update.Message.Text
+		addStatus = address // switching to entering an adress
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Enter the person's address.")
+		bot.Send(msg)
+
+	case address:
+		person.Address = update.Message.Text
+		addStatus = profession // switching to entering an adress
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Enter the person's profession.")
+		bot.Send(msg)
+
+	case profession:
+		person.Profession = update.Message.Text
+
+		//Putting info to database
+		if err := db.AddPerson(update.Message.Chat.UserName, person); err != nil {
+			//Send message
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Database error, but bot still working. Error: "+err.Error())
+			bot.Send(msg)
+		} else {
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "OK. Information added.")
+			bot.Send(msg)
+		}
+		return name, true
+	}
+	return addStatus, false
+}
 
 func TelegramBot() {
 
@@ -110,43 +176,10 @@ func TelegramBot() {
 				status = free
 
 			} else if status == add {
-				switch addStatus {
-				case name:
-					person.Name = update.Message.Text
-					addStatus = age // switching to entering an age
-					msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Enter age.")
-					bot.Send(msg)
-
-				case age:
-					person.Birthdate, err = time.Parse("2006-01-02", update.Message.Text)
-					if err != nil {
-						addStatus = age
-						msg := tgbotapi.NewMessage(update.Message.Chat.ID, "It's not a number. Enter a number.")
-						bot.Send(msg)
-					} else {
-						addStatus = number // switching to entering a number
-						msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Enter the person's number.")
-						bot.Send(msg)
-					}
-
-				case number:
-					person.Num, err = strconv.Atoi(update.Message.Text)
-					if err != nil {
-						addStatus = number
-						msg := tgbotapi.NewMessage(update.Message.Chat.ID, "It's not a number. Enter a number.")
-						bot.Send(msg)
-					} else {
-						//Putting name, age, number to database
-						if err := db.AddPerson(update.Message.Chat.UserName, person.Name, person.Birthdate, person.Num); err != nil {
-							//Send message
-							msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Database error, but bot still working. Error: "+err.Error())
-							bot.Send(msg)
-						} else {
-							msg := tgbotapi.NewMessage(update.Message.Chat.ID, "OK. Information added.")
-							bot.Send(msg)
-						}
-						status = free
-					}
+				var ok bool
+				addStatus, ok = AddSwitch(addStatus, &person, update, bot)
+				if ok {
+					status = free
 				}
 			}
 
